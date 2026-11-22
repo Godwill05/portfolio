@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
-import { ApiFailure } from '../../core/api-error';
+import { toApiFailure } from '../../core/api-error';
 import { AuthService } from '../../core/auth.service';
 import { ToastService } from '../../core/ui/toast.service';
 
@@ -225,7 +225,10 @@ export class LoginPage {
         const next = new URLSearchParams(window.location.search).get('next');
         void this.router.navigateByUrl(next && next.startsWith('/') ? next : '/app/dashboard');
       },
-      error: (failure: ApiFailure) => {
+      error: (raw: unknown) => {
+        // Normalisation systématique : une erreur inattendue (réponse hors
+        // format, coupure réseau) ne doit jamais laisser le formulaire figé.
+        const failure = toApiFailure(raw);
         this.pending.set(false);
         // Message générique volontaire : ne pas révéler si l'email existe.
         this.error.set(

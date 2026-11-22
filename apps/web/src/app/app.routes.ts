@@ -3,7 +3,19 @@ import { Routes } from '@angular/router';
 import { adminGuard, authGuard, guestGuard } from './core/guards';
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'app/dashboard' },
+  /**
+   * La racine est un portfolio public, pas un écran de connexion.
+   * `PublicPortfolioPage` résout le profil à afficher : slug demandé, ou
+   * premier portfolio publié, ou contenu de démonstration si l'API est
+   * injoignable.
+   */
+  {
+    path: '',
+    pathMatch: 'full',
+    loadComponent: () =>
+      import('./features/public/public-portfolio-page').then((m) => m.PublicPortfolioPage),
+    title: 'FolioForge — Portfolio professionnel',
+  },
 
   {
     path: 'auth',

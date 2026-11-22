@@ -1,0 +1,351 @@
+@if (loading()) {
+  <div class="boot">
+    <div class="ff-skeleton" style="height: 2rem; width: 16rem"></div>
+    <div class="ff-skeleton" style="height: 30rem; width: 100%; margin-top: 1rem"></div>
+  </div>
+} @else if (cv(); as document) {
+  <!-- Barre d'outils -->
+  <header class="bar">
+    <div class="bar__left">
+      <a class="back" routerLink="/app/cvs" aria-label="Retour à la bibliothèque">←</a>
+      <div class="bar__titles">
+        <h1 class="bar__title">{{ document.title }}</h1>
+        <p class="bar__meta">
+          {{ document.templateKey }}
+          <span class="bar__dot">·</span>
+          <span class="ff-badge" [class.ff-badge--accent]="document.status === 'published'">
+            {{ statusLabel(document.status) }}
+          </span>
+          @if (dirty()) {
+            <span class="bar__dirty">modifications non enregistrées</span>
+          }
+        </p>
+      </div>
+    </div>
+
+    <div class="bar__actions">
+      <button type="button" class="ff-btn ff-btn--ghost ff-btn--sm" (click)="duplicate()">
+        Dupliquer
+      </button>
+      <button type="button" class="ff-btn ff-btn--secondary ff-btn--sm" (click)="download()">
+        Télécharger
+      </button>
+      <button type="button" class="ff-btn ff-btn--primary ff-btn--sm" (click)="save()"
+              [disabled]="saving()">
+        {{ saving() ? 'Enregistrement…' : 'Enregistrer' }}
+      </button>
+    </div>
+  </header>
+
+  <div class="editor">
+    <!-- Colonne d'édition -->
+    <section class="panel">
+      <nav class="pane-tabs" aria-label="Sections de l’éditeur">
+        <button type="button" class="pane-tab" [class.pane-tab--active]="pane() === 'content'"
+                (click)="pane.set('content')">Contenu</button>
+        <button type="button" class="pane-tab" [class.pane-tab--active]="pane() === 'design'"
+                (click)="pane.set('design')">Apparence</button>
+        <button type="button" class="pane-tab" [class.pane-tab--active]="pane() === 'ai'"
+                (click)="pane.set('ai')">Assistant IA</button>
+      </nav>
+
+      <!-- ── Contenu ── -->
+      @if (pane() === 'content') {
+        <div class="pane">
+          <div class="pane__block">
+            <h2 class="pane__heading">Informations personnelles</h2>
+            <div class="grid2">
+              <div class="ff-field">
+                <label class="ff-label" for="h-name">Nom complet</label>
+                <input id="h-name" class="ff-input" [value]="document.document.header.fullName"
+                       (input)="updateHeader('fullName', $event)" maxlength="160" />
+              </div>
+              <div class="ff-field">
+                <label class="ff-label" for="h-headline">Titre</label>
+                <input id="h-headline" class="ff-input" [value]="document.document.header.headline ?? ''"
+                       (input)="updateHeader('headline', $event)" maxlength="200" />
+              </div>
+              <div class="ff-field">
+                <label class="ff-label" for="h-email">Email</label>
+                <input id="h-email" class="ff-input" [value]="document.document.header.email ?? ''"
+                       (input)="updateHeader('email', $event)" maxlength="200" />
+              </div>
+              <div class="ff-field">
+                <label class="ff-label" for="h-phone">Téléphone</label>
+                <input id="h-phone" class="ff-input" [value]="document.document.header.phone ?? ''"
+                       (input)="updateHeader('phone', $event)" maxlength="60" />
+              </div>
+              <div class="ff-field">
+                <label class="ff-label" for="h-loc">Localisation</label>
+                <input id="h-loc" class="ff-input" [value]="document.document.header.location ?? ''"
+                       (input)="updateHeader('location', $event)" maxlength="160" />
+              </div>
+              <div class="ff-field">
+                <label class="ff-label" for="h-web">Site web</label>
+                <input id="h-web" class="ff-input" [value]="document.document.header.website ?? ''"
+                       (input)="updateHeader('website', $event)" maxlength="300" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Sections du document -->
+          @for (section of sections(); track section.id) {
+            <div class="pane__block section" [class.section--hidden]="!section.visible">
+              <div class="section__head">
+                <div class="section__label">
+                  <span class="ff-eyebrow">{{ sectionLabels[section.type] ?? section.type }}</span>
+                  <input
+                    class="section__title-input"
+                    [value]="section.title"
+                    (input)="updateSectionTitle(section, $event)"
+                    [attr.aria-label]="'Titre de la section'"
+                    maxlength="120"
+                  />
+                </div>
+                <label class="switch">
+                  <input type="checkbox" [checked]="section.visible"
+                         (change)="toggleSection(section)" />
+                  <span class="switch__text">{{ section.visible ? 'Visible' : 'Masquée' }}</span>
+                </label>
+              </div>
+
+              @if (section.visible) {
+                @if (section.body !== undefined) {
+                  <div class="ff-field">
+                    <textarea class="ff-textarea" rows="4" [value]="section.body ?? ''"
+                              (input)="updateSectionBody(section, $event)"
+                              placeholder="Texte de cette section"></textarea>
+                  </div>
+                }
+
+                @for (item of section.items; track item.id) {
+                  <div class="item">
+                    <input class="ff-input item__title" [value]="item.title ?? ''"
+                           (input)="updateItemField(section, item.id, 'title', $event)"
+                           placeholder="Intitulé" maxlength="200" />
+                    <div class="item__row">
+                      <input class="ff-input" [value]="item.subtitle ?? ''"
+                             (input)="updateItemField(section, item.id, 'subtitle', $event)"
+                             placeholder="Sous-titre" maxlength="200" />
+                      <input class="ff-input" [value]="item.meta ?? ''"
+                             (input)="updateItemField(section, item.id, 'meta', $event)"
+                             placeholder="Période" maxlength="200" />
+                    </div>
+                    @if (item.bullets?.length) {
+                      <textarea class="ff-textarea" rows="3"
+                                [value]="(item.bullets ?? []).join('\n')"
+                                (input)="updateItemField(section, item.id, 'description', $event)"
+                                placeholder="Une réalisation par ligne"></textarea>
+                    }
+                  </div>
+                }
+
+                @if (section.items.length === 0 && section.body === undefined) {
+                  <p class="ff-hint">Aucun élément dans cette section.</p>
+                }
+              }
+            </div>
+          }
+
+          <div class="pane__footer">
+            <button type="button" class="ff-btn ff-btn--secondary ff-btn--sm" (click)="regenerate()"
+                    [disabled]="saving()">
+              Régénérer depuis mon profil
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- ── Apparence ── -->
+      @if (pane() === 'design') {
+        <div class="pane" [formGroup]="styleForm">
+          <div class="pane__block">
+            <h2 class="pane__heading">Modèle et métadonnées</h2>
+
+            <div class="ff-field">
+              <label class="ff-label" for="m-title">Titre du CV</label>
+              <input id="m-title" class="ff-input" formControlName="title" maxlength="160" />
+            </div>
+
+            <div class="ff-field">
+              <label class="ff-label" for="m-template">Modèle</label>
+              <select id="m-template" class="ff-select" formControlName="templateKey">
+                @for (template of templates(); track template.key) {
+                  <option [value]="template.key">
+                    {{ template.name }} — {{ template.category }}
+                  </option>
+                }
+              </select>
+            </div>
+
+            <div class="ff-field">
+              <label class="ff-label" for="m-role">Poste visé</label>
+              <input id="m-role" class="ff-input" formControlName="targetRole" maxlength="200" />
+            </div>
+
+            <div class="ff-field">
+              <label class="ff-label" for="m-status">Statut</label>
+              <select id="m-status" class="ff-select" formControlName="status">
+                <option value="draft">Brouillon</option>
+                <option value="published">Publié</option>
+                <option value="archived">Archivé</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="pane__block">
+            <h2 class="pane__heading">Style</h2>
+
+            <div class="ff-field">
+              <label class="ff-label" for="s-color">Couleur d’accent</label>
+              <div class="color-row">
+                <input id="s-color" type="color" class="color-input" formControlName="accentColor" />
+                <input class="ff-input" formControlName="accentColor" maxlength="9" />
+              </div>
+            </div>
+
+            <div class="ff-field">
+              <label class="ff-label" for="s-scale">Taille du texte — {{ styleForm.controls.fontScale.value }} %</label>
+              <input id="s-scale" type="range" class="range" formControlName="fontScale"
+                     min="80" max="130" step="5" />
+            </div>
+
+            <div class="grid2">
+              <div class="ff-field">
+                <label class="ff-label" for="s-case">Casse des titres</label>
+                <select id="s-case" class="ff-select" formControlName="headingCase">
+                  <option value="none">Normale</option>
+                  <option value="upper">Majuscules</option>
+                </select>
+              </div>
+              <div class="ff-field">
+                <label class="ff-label" for="s-density">Densité</label>
+                <select id="s-density" class="ff-select" formControlName="density">
+                  <option value="compact">Compacte</option>
+                  <option value="normal">Normale</option>
+                  <option value="relaxed">Aérée</option>
+                </select>
+              </div>
+            </div>
+
+            <label class="check">
+              <input type="checkbox" formControlName="showPhoto" />
+              <span>Afficher la photo</span>
+            </label>
+          </div>
+
+          <div class="pane__footer">
+            <button type="button" class="ff-btn ff-btn--primary ff-btn--sm" (click)="save()"
+                    [disabled]="saving()">
+              Appliquer et enregistrer
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- ── Assistant IA ── -->
+      @if (pane() === 'ai') {
+        <div class="pane">
+          <div class="pane__block">
+            <h2 class="pane__heading">Optimiser avec l’assistant</h2>
+            <p class="ff-hint">
+              L’assistant s’appuie sur votre parcours réel et ne doit rien inventer.
+              Chaque appel consomme un crédit d’optimisation.
+            </p>
+
+            <div class="ff-field">
+              <label class="ff-label" for="ai-role">Poste visé</label>
+              <input id="ai-role" class="ff-input" [value]="aiTargetRole()"
+                     (input)="aiTargetRole.set($any($event.target).value)"
+                     placeholder="Développeuse frontend senior" maxlength="200" />
+            </div>
+
+            <button type="button" class="ff-btn ff-btn--primary" (click)="optimizeWithAi()"
+                    [disabled]="aiBusy()">
+              {{ aiBusy() ? 'Analyse en cours…' : 'Optimiser mon CV' }}
+            </button>
+          </div>
+
+          @if (aiResult(); as result) {
+            <div class="pane__block result">
+              <h2 class="pane__heading">Suggestions</h2>
+
+              @if (result['summary']) {
+                <div class="result__group">
+                  <p class="result__label">Résumé proposé</p>
+                  <p class="result__text">{{ asText(result['summary']) }}</p>
+                </div>
+              }
+
+              @if (asList(result['bullets']).length) {
+                <div class="result__group">
+                  <p class="result__label">Points à ajouter</p>
+                  <ul class="result__list">
+                    @for (bullet of asList(result['bullets']); track bullet) {
+                      <li>{{ bullet }}</li>
+                    }
+                  </ul>
+                  <button type="button" class="ff-btn ff-btn--secondary ff-btn--sm"
+                          (click)="applySuggestion()">
+                    Ajouter à mon expérience
+                  </button>
+                </div>
+              }
+
+              @if (asList(result['keywords']).length) {
+                <div class="result__group">
+                  <p class="result__label">Mots-clés détectés</p>
+                  <p class="chips">
+                    @for (keyword of asList(result['keywords']); track keyword) {
+                      <span class="chip">{{ keyword }}</span>
+                    }
+                  </p>
+                </div>
+              }
+
+              @if (asList(result['suggestions']).length) {
+                <div class="result__group">
+                  <p class="result__label">Recommandations</p>
+                  <ul class="result__list">
+                    @for (tip of asList(result['suggestions']); track tip) {
+                      <li>{{ tip }}</li>
+                    }
+                  </ul>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+    </section>
+
+    <!-- Aperçu PDF -->
+    <aside class="preview-pane">
+      <div class="preview-pane__head">
+        <p class="preview-pane__label">Aperçu</p>
+        <button type="button" class="ff-btn ff-btn--ghost ff-btn--sm"
+                (click)="refreshPreview()" [disabled]="previewLoading()">
+          {{ previewLoading() ? 'Rendu…' : 'Actualiser' }}
+        </button>
+      </div>
+
+      @if (previewUrl(); as url) {
+        <iframe
+          class="preview-pane__frame"
+          [src]="url"
+          title="Aperçu du CV"
+          type="application/pdf"
+        ></iframe>
+      } @else {
+        <div class="preview-pane__empty">
+          <p class="ff-hint">
+            L’aperçu s’affiche après le premier enregistrement.
+          </p>
+          <button type="button" class="ff-btn ff-btn--secondary ff-btn--sm" (click)="save()">
+            Enregistrer pour générer l’aperçu
+          </button>
+        </div>
+      }
+    </aside>
+  </div>
+}

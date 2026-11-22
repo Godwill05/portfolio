@@ -1,0 +1,222 @@
+<app-page-header
+  eyebrow="Bibliothèque"
+  title="Mes CV"
+  subtitle="Chaque CV part d’un modèle, puis se remplit depuis votre profil. Export PDF en un clic."
+>
+  <button type="button" class="ff-btn ff-btn--primary" (click)="openCreate()">
+    Nouveau CV
+  </button>
+</app-page-header>
+
+<!-- Barre de filtres -->
+<div class="toolbar">
+  <div class="search">
+    <input
+      type="search"
+      class="ff-input"
+      placeholder="Rechercher un CV…"
+      [value]="search()"
+      (input)="search.set($any($event.target).value)"
+      aria-label="Rechercher un CV"
+    />
+  </div>
+
+  <div class="filters">
+    <select
+      class="ff-select"
+      [value]="statusFilter()"
+      (change)="statusFilter.set($any($event.target).value); applyFilters()"
+      aria-label="Filtrer par statut"
+    >
+      <option value="">Tous les statuts</option>
+      <option value="draft">Brouillons</option>
+      <option value="published">Publiés</option>
+      <option value="archived">Archivés</option>
+    </select>
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="cards">
+    @for (i of [1, 2, 3, 4]; track i) {
+      <div class="ff-card ff-card--padded">
+        <div class="ff-skeleton" style="height: 9rem; width: 100%"></div>
+        <div class="ff-skeleton" style="height: 0.8rem; width: 60%; margin-top: 0.8rem"></div>
+      </div>
+    }
+  </div>
+} @else if (filtered().length === 0) {
+  <div class="ff-card ff-card--padded empty-state">
+    <p class="empty-state__title">
+      @if (search() || statusFilter()) {
+        Aucun CV ne correspond à ces filtres
+      } @else {
+        Vous n’avez pas encore de CV
+      }
+    </p>
+    <p class="empty-state__text">
+      @if (search() || statusFilter()) {
+        Essayez d’élargir votre recherche.
+      } @else {
+        Créez votre premier CV : le contenu se remplit depuis votre profil professionnel,
+        et vous pouvez tout ajuster ensuite.
+      }
+    </p>
+    @if (!search() && !statusFilter()) {
+      <button type="button" class="ff-btn ff-btn--primary" (click)="openCreate()">
+        Créer mon premier CV
+      </button>
+    }
+  </div>
+} @else {
+  <div class="cards">
+    @for (cv of filtered(); track cv.id) {
+      <article class="card" [class.card--busy]="busyId() === cv.id">
+        <!-- Aperçu stylisé du modèle, généré en CSS -->
+        <a class="card__preview" [routerLink]="['/app/cvs', cv.id]" [attr.aria-label]="'Ouvrir ' + cv.title">
+          <div class="preview">
+            <div class="preview__head">
+              <span class="preview__name">{{ cv.document?.header?.fullName || cv.title }}</span>
+              <span class="preview__rule"></span>
+            </div>
+            @for (section of (cv.document?.sections ?? []).slice(0, 3); track section.id) {
+              <div class="preview__section">
+                <span class="preview__label">{{ section.title }}</span>
+                <span class="preview__line"></span>
+                <span class="preview__line preview__line--short"></span>
+              </div>
+            }
+            @if ((cv.document?.sections?.length ?? 0) === 0) {
+              <div class="preview__section">
+                <span class="preview__line"></span>
+                <span class="preview__line preview__line--short"></span>
+                <span class="preview__line"></span>
+              </div>
+            }
+          </div>
+
+          <span class="card__status" [class.card__status--published]="cv.status === 'published'">
+            {{ statusLabel(cv.status) }}
+          </span>
+        </a>
+
+        <div class="card__body">
+          <div class="card__head">
+            <a class="card__title" [routerLink]="['/app/cvs', cv.id]">{{ cv.title }}</a>
+            @if (cv.aiAssisted) {
+              <span class="ff-badge ff-badge--accent">IA</span>
+            }
+          </div>
+
+          <p class="card__meta">
+            {{ templateName(cv.templateKey) }}
+            @if (cv.targetRole) {
+              · {{ cv.targetRole }}
+            }
+          </p>
+          <p class="card__date">Modifié {{ relative(cv.updatedAt) }}</p>
+        </div>
+
+        <div class="card__actions">
+          <button type="button" class="ff-btn ff-btn--secondary ff-btn--sm" (click)="download(cv)"
+                  [disabled]="busyId() === cv.id">
+            PDF
+          </button>
+          <button type="button" class="ff-btn ff-btn--ghost ff-btn--sm" (click)="duplicate(cv)"
+                  [disabled]="busyId() === cv.id">
+            Dupliquer
+          </button>
+          <button type="button" class="ff-btn ff-btn--ghost ff-btn--sm danger" (click)="remove(cv)"
+                  [disabled]="busyId() === cv.id">
+            Supprimer
+          </button>
+        </div>
+      </article>
+    }
+  </div>
+
+  @if (pages() > 1) {
+    <nav class="pager" aria-label="Pagination">
+      <button type="button" class="ff-btn ff-btn--secondary ff-btn--sm"
+              [disabled]="page() <= 1" (click)="goToPage(page() - 1)">
+        Précédent
+      </button>
+      <span class="pager__info">Page {{ page() }} sur {{ pages() }}</span>
+      <button type="button" class="ff-btn ff-btn--secondary ff-btn--sm"
+              [disabled]="page() >= pages()" (click)="goToPage(page() + 1)">
+        Suivant
+      </button>
+    </nav>
+  }
+}
+
+<!-- Dialogue de création -->
+@if (creating()) {
+  <app-modal
+    title="Nouveau CV"
+    description="Choisissez un modèle. Le contenu se remplit ensuite depuis votre profil."
+    (closed)="closeCreate()"
+  >
+    <div class="create">
+      <div class="ff-field">
+        <label class="ff-label ff-label--required" for="cv-title">Titre</label>
+        <input
+          id="cv-title"
+          class="ff-input"
+          placeholder="CV développeur full-stack"
+          [value]="newTitle()"
+          (input)="newTitle.set($any($event.target).value)"
+          maxlength="160"
+        />
+      </div>
+
+      <div class="ff-field">
+        <label class="ff-label" for="cv-role">Poste visé</label>
+        <input
+          id="cv-role"
+          class="ff-input"
+          placeholder="Développeuse frontend senior"
+          [value]="newTargetRole()"
+          (input)="newTargetRole.set($any($event.target).value)"
+          maxlength="200"
+        />
+        <p class="ff-hint">Sert de contexte à l’assistant pour adapter le contenu.</p>
+      </div>
+
+      <div class="ff-field">
+        <span class="ff-label">Modèle</span>
+
+        @for (group of templatesByCategory(); track group.category) {
+          <p class="gallery__category">{{ group.category }}</p>
+          <div class="gallery">
+            @for (template of group.items; track template.key) {
+              <button
+                type="button"
+                class="gallery__item"
+                [class.gallery__item--active]="newTemplate() === template.key"
+                (click)="newTemplate.set(template.key)"
+                [attr.aria-pressed]="newTemplate() === template.key"
+              >
+                <span class="gallery__swatch" [style.background]="template.accentColor"></span>
+                <span class="gallery__name">{{ template.name }}</span>
+              </button>
+            }
+          </div>
+        }
+
+        @if (templates().length === 0) {
+          <p class="ff-hint">Chargement des modèles…</p>
+        }
+      </div>
+
+      <footer class="create__actions">
+        <button type="button" class="ff-btn ff-btn--secondary" (click)="closeCreate()">
+          Annuler
+        </button>
+        <button type="button" class="ff-btn ff-btn--primary" (click)="create()">
+          Créer le CV
+        </button>
+      </footer>
+    </div>
+  </app-modal>
+}

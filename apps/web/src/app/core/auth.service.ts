@@ -94,8 +94,8 @@ export class AuthService {
   bootstrap(): Observable<PublicUser | null> {
     if (this.tokens.get() && !this.tokens.isExpired()) {
       return this.http.get<{ data: MeResult }>('/api/auth/me').pipe(
-        tap((res) => this._user.set(res.data)),
-        map((res) => res.data),
+        tap((res) => this._user.set(res.data.user)),
+        map((res) => res.data.user),
         tap(() => {
           this._bootstrapped.set(true);
           this._loading.set(false);
@@ -172,7 +172,9 @@ export class AuthService {
   }
 
   private applySession(result: AuthResult): void {
-    this.tokens.set(result.tokens.accessToken, result.tokens.expiresIn);
+    // L'API renvoie l'access token à plat, et pose le refresh token dans un
+    // cookie httpOnly — il n'apparaît donc jamais dans le corps.
+    this.tokens.set(result.accessToken, result.expiresIn);
     this._user.set(result.user);
   }
 }

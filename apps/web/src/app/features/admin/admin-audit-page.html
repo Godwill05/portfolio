@@ -1,0 +1,105 @@
+<div class="toolbar">
+  <input
+    type="search"
+    class="ff-input search"
+    placeholder="Rechercher un acteur, une entité…"
+    [value]="search()"
+    (input)="search.set($any($event.target).value)"
+    (keydown.enter)="applyFilters()"
+    aria-label="Rechercher dans le journal"
+  />
+
+  <select class="ff-select filter" [value]="action()"
+          (change)="action.set($any($event.target).value); applyFilters()"
+          aria-label="Filtrer par action">
+    <option value="">Toutes les actions</option>
+    <option value="auth.login">auth.login</option>
+    <option value="auth.logout">auth.logout</option>
+    <option value="user.quota.adjust">user.quota.adjust</option>
+    <option value="user.update">user.update</option>
+    <option value="user.delete">user.delete</option>
+  </select>
+
+  <span class="count">{{ total() }} entrée(s)</span>
+</div>
+
+@if (loading()) {
+  <div class="ff-card">
+    <div class="ff-skeleton" style="height: 20rem"></div>
+  </div>
+} @else if (entries().length === 0) {
+  <div class="ff-card ff-card--padded">
+    <p class="ff-hint">Aucune entrée pour ces filtres.</p>
+  </div>
+} @else {
+  <div class="ff-card">
+    <ul class="log">
+      @for (entry of entries(); track entry.id) {
+        <li class="log__item">
+          <button type="button" class="log__row" (click)="toggle(entry.id)"
+                  [attr.aria-expanded]="expanded() === entry.id">
+            <span class="dot" [class]="'dot dot--' + tone(entry.action)" aria-hidden="true"></span>
+
+            <span class="log__main">
+              <span class="log__action">{{ entry.action }}</span>
+              <span class="log__who">
+                {{ entry.actorEmail || 'système' }}
+                @if (entry.entity) {
+                  · {{ entry.entity }}
+                  @if (entry.entityId) {
+                    <code class="log__id">{{ entry.entityId.slice(0, 8) }}</code>
+                  }
+                }
+              </span>
+            </span>
+
+            @if (changesSummary(entry)) {
+              <span class="log__changes">{{ changesSummary(entry) }}</span>
+            }
+
+            <span class="log__time">{{ when(entry.createdAt) }}</span>
+          </button>
+
+          @if (expanded() === entry.id) {
+            <div class="log__detail">
+              <dl class="detail-grid">
+                <div class="detail-item">
+                  <dt>Identifiant</dt>
+                  <dd><code>{{ entry.id }}</code></dd>
+                </div>
+                <div class="detail-item">
+                  <dt>Acteur</dt>
+                  <dd>{{ entry.actorId || '—' }}</dd>
+                </div>
+                <div class="detail-item">
+                  <dt>Adresse IP</dt>
+                  <dd>{{ entry.ipAddress || '—' }}</dd>
+                </div>
+                <div class="detail-item">
+                  <dt>Agent</dt>
+                  <dd class="detail-item__agent">{{ entry.userAgent || '—' }}</dd>
+                </div>
+              </dl>
+
+              @if (entry.changes) {
+                <pre class="changes">{{ prettyChanges(entry) }}</pre>
+              } @else {
+                <p class="ff-hint">Aucun détail de modification enregistré.</p>
+              }
+            </div>
+          }
+        </li>
+      }
+    </ul>
+  </div>
+
+  @if (pages() > 1) {
+    <nav class="pager" aria-label="Pagination">
+      <button type="button" class="ff-btn ff-btn--secondary ff-btn--sm"
+              [disabled]="page() <= 1" (click)="goToPage(page() - 1)">Précédent</button>
+      <span class="pager__info">Page {{ page() }} sur {{ pages() }}</span>
+      <button type="button" class="ff-btn ff-btn--secondary ff-btn--sm"
+              [disabled]="page() >= pages()" (click)="goToPage(page() + 1)">Suivant</button>
+    </nav>
+  }
+}

@@ -83,19 +83,23 @@ export interface PublicUser {
   createdAt: string;
 }
 
-export interface AuthTokens {
+/**
+ * Réponse de login / register / refresh.
+ *
+ * Le refresh token n'apparaît jamais ici : l'API le pose dans un cookie
+ * httpOnly. Le champ `accessToken` est à plat, pas imbriqué.
+ */
+export interface AuthResult {
+  user: PublicUser;
   accessToken: string;
-  refreshToken: string;
   expiresIn: number;
 }
 
-export interface AuthResult {
+/** `GET /api/auth/me` renvoie l'utilisateur et son résumé de quotas. */
+export interface MeResult {
   user: PublicUser;
-  tokens: AuthTokens;
+  quota: QuotaSummary;
 }
-
-/** `GET /api/auth/me` — l'utilisateur seul, sans les tokens. */
-export type MeResult = PublicUser;
 
 export interface LoginPayload {
   email: string;

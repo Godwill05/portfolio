@@ -62,7 +62,7 @@ import { RouterOutlet } from '@angular/router';
       /* ── Colonne gauche ── */
       .aside {
         position: relative;
-        background: linear-gradient(160deg, #1a4a3c 0%, #123329 55%, #0e2721 100%);
+        background: linear-gradient(160deg, #035c80 0%, #024a66 55%, #012f42 100%);
         color: #f0f4f2;
         overflow: hidden;
       }
@@ -167,7 +167,7 @@ import { RouterOutlet } from '@angular/router';
         width: 5px;
         height: 5px;
         border-radius: 50%;
-        background: #8fc4b0;
+        background: #7fc4e0;
         transform: translateY(-2px);
       }
 
