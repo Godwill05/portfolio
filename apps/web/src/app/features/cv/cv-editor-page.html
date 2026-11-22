@@ -93,7 +93,7 @@
             <div class="pane__block section" [class.section--hidden]="!section.visible">
               <div class="section__head">
                 <div class="section__label">
-                  <span class="ff-eyebrow">{{ sectionLabels[section.type] ?? section.type }}</span>
+                  <span class="ff-eyebrow">{{ sectionLabels[section.type] }}</span>
                   <input
                     class="section__title-input"
                     [value]="section.title"
@@ -112,7 +112,7 @@
               @if (section.visible) {
                 @if (section.body !== undefined) {
                   <div class="ff-field">
-                    <textarea class="ff-textarea" rows="4" [value]="section.body ?? ''"
+                    <textarea class="ff-textarea" rows="4" [value]="section.body"
                               (input)="updateSectionBody(section, $event)"
                               placeholder="Texte de cette section"></textarea>
                   </div>

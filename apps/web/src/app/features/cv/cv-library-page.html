@@ -76,17 +76,17 @@
         <a class="card__preview" [routerLink]="['/app/cvs', cv.id]" [attr.aria-label]="'Ouvrir ' + cv.title">
           <div class="preview">
             <div class="preview__head">
-              <span class="preview__name">{{ cv.document?.header?.fullName || cv.title }}</span>
+              <span class="preview__name">{{ cv.document.header.fullName || cv.title }}</span>
               <span class="preview__rule"></span>
             </div>
-            @for (section of (cv.document?.sections ?? []).slice(0, 3); track section.id) {
+            @for (section of cv.document.sections.slice(0, 3); track section.id) {
               <div class="preview__section">
                 <span class="preview__label">{{ section.title }}</span>
                 <span class="preview__line"></span>
                 <span class="preview__line preview__line--short"></span>
               </div>
             }
-            @if ((cv.document?.sections?.length ?? 0) === 0) {
+            @if (cv.document.sections.length === 0) {
               <div class="preview__section">
                 <span class="preview__line"></span>
                 <span class="preview__line preview__line--short"></span>

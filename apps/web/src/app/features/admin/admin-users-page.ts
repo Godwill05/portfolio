@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 
 import { ApiFailure } from '../../core/api-error';
 import { AdminApi } from '../../core/admin.service';
@@ -20,7 +19,7 @@ import type { AccountStatus, AdminUserDetail, AdminUserSummary, UserRole } from 
 @Component({
   selector: 'app-admin-users-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, Modal],
+  imports: [ReactiveFormsModule, Modal],
   templateUrl: './admin-users-page.html',
   styleUrl: './admin-users-page.scss',
 })
