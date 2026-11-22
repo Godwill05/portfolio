@@ -1,0 +1,124 @@
+/* ──────────────────────────────────────────────────────────────
+   FolioForge design tokens
+   Sobre, professionnel, orienté contenu. Trois polices déjà
+   installées : Fraunces (titres), Inter (texte), JetBrains Mono (code).
+   ────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Palette neutre chaude — un gris légèrement chaud évite le côté
+     "dashboard générique" sans tomber dans le beige. */
+  --ff-bg: #fbfaf9;
+  --ff-surface: #ffffff;
+  --ff-surface-muted: #f5f3f1;
+  --ff-surface-sunken: #efece9;
+
+  --ff-ink: #1a1a18;
+  --ff-ink-soft: #4a4844;
+  --ff-ink-muted: #78746d;
+  --ff-ink-faint: #a8a29a;
+
+  --ff-line: #e4e0db;
+  --ff-line-strong: #d3cec7;
+
+  /* Accent : bleu profond de la marque (#035c80). */
+  --ff-accent: #035c80;
+  --ff-accent-hover: #024a66;
+  --ff-accent-soft: #e6f1f6;
+  --ff-accent-line: #b3d3e0;
+  --ff-accent-ink: #023a52;
+
+  /* Sémantique */
+  --ff-danger: #9b2c2c;
+  --ff-danger-soft: #fbebeb;
+  --ff-warning: #8a5a00;
+  --ff-warning-soft: #fdf3e0;
+  --ff-success: #0f6b4f;
+  --ff-success-soft: #e6f2ee;
+  --ff-info: #2a4d7a;
+  --ff-info-soft: #eaf0f8;
+
+  /* Typographie */
+  --ff-font-display: 'Fraunces Variable', Georgia, 'Times New Roman', serif;
+  --ff-font-body: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --ff-font-mono: 'JetBrains Mono Variable', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* Échelle de texte */
+  --ff-text-xs: 0.75rem;
+  --ff-text-sm: 0.8125rem;
+  --ff-text-base: 0.9375rem;
+  --ff-text-md: 1.0625rem;
+  --ff-text-lg: 1.25rem;
+  --ff-text-xl: 1.5rem;
+  --ff-text-2xl: 2rem;
+  --ff-text-3xl: 2.5rem;
+
+  /* Espacement — base 4px */
+  --ff-1: 0.25rem;
+  --ff-2: 0.5rem;
+  --ff-3: 0.75rem;
+  --ff-4: 1rem;
+  --ff-5: 1.25rem;
+  --ff-6: 1.5rem;
+  --ff-8: 2rem;
+  --ff-10: 2.5rem;
+  --ff-12: 3rem;
+  --ff-16: 4rem;
+
+  /* Rayons */
+  --ff-radius-sm: 4px;
+  --ff-radius: 8px;
+  --ff-radius-lg: 12px;
+  --ff-radius-xl: 16px;
+  --ff-radius-full: 9999px;
+
+  /* Ombres — très discrètes, une seule couche */
+  --ff-shadow-xs: 0 1px 2px rgba(26, 26, 24, 0.05);
+  --ff-shadow-sm: 0 1px 3px rgba(26, 26, 24, 0.07), 0 1px 2px rgba(26, 26, 24, 0.04);
+  --ff-shadow: 0 4px 12px rgba(26, 26, 24, 0.08), 0 1px 3px rgba(26, 26, 24, 0.05);
+  --ff-shadow-lg: 0 12px 32px rgba(26, 26, 24, 0.11);
+
+  /* Mouvement */
+  --ff-transition: 140ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Structure */
+  --ff-sidebar-w: 248px;
+  --ff-topbar-h: 61px;
+  --ff-content-max: 1120px;
+}
+
+/* Mode sombre — pas d'inversion naïve : on retravaille les neutres
+   pour garder le contraste et la chaleur. */
+[data-theme='dark'] {
+  --ff-bg: #171715;
+  --ff-surface: #1f1f1c;
+  --ff-surface-muted: #262521;
+  --ff-surface-sunken: #141412;
+
+  --ff-ink: #f2f0ec;
+  --ff-ink-soft: #c9c5bd;
+  --ff-ink-muted: #948f86;
+  --ff-ink-faint: #6b675f;
+
+  --ff-line: #33322d;
+  --ff-line-strong: #45443d;
+
+  --ff-accent: #3fa3cd;
+  --ff-accent-hover: #62b8dc;
+  --ff-accent-soft: #0c2733;
+  --ff-accent-line: #1b4257;
+  --ff-accent-ink: #8fd0ea;
+
+  --ff-danger: #e07a7a;
+  --ff-danger-soft: #2e1d1d;
+  --ff-warning: #d9a94a;
+  --ff-warning-soft: #2c2416;
+  --ff-success: #55b391;
+  --ff-success-soft: #122c25;
+  --ff-info: #7fa8d9;
+  --ff-info-soft: #1a2432;
+
+  --ff-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --ff-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --ff-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --ff-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+}

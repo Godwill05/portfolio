@@ -33,6 +33,9 @@
               }
             ],
             "styles": [
+              "@fontsource-variable/inter/index.css",
+              "@fontsource-variable/fraunces/index.css",
+              "@fontsource-variable/jetbrains-mono/index.css",
               "src/styles.scss"
             ]
           },
@@ -46,8 +49,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "4kB",
-                  "maximumError": "8kB"
+                  "maximumWarning": "16kB",
+                  "maximumError": "24kB"
                 }
               ],
               "outputHashing": "all"
@@ -70,7 +73,15 @@
               "buildTarget": "web:build:development"
             }
           },
-          "defaultConfiguration": "development"
+          "defaultConfiguration": "development",
+          "options": {
+            "proxyConfig": "proxy.conf.json",
+            "allowedHosts": [
+              ".e2b.app",
+              "localhost",
+              "127.0.0.1"
+            ]
+          }
         },
         "extract-i18n": {
           "builder": "@angular/build:extract-i18n"

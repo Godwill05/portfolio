@@ -1,0 +1,458 @@
+@if (loading()) {
+  <div class="loading">
+    <div class="ff-skeleton" style="height: 2rem; width: 14rem"></div>
+    <div class="ff-skeleton" style="height: 12rem; width: 100%; margin-top: 1rem"></div>
+  </div>
+} @else {
+  <app-page-header
+    eyebrow="Profil professionnel"
+    title="Votre parcours"
+    subtitle="Ces informations alimentent vos CV, votre portfolio public et le contexte de l’assistant IA."
+  >
+    <a class="ff-btn ff-btn--secondary" routerLink="/app/profile/preview">
+      Aperçu du portfolio
+    </a>
+    @if (profile()?.slug) {
+      <a class="ff-btn ff-btn--ghost" [routerLink]="['/p', profile()!.slug]" target="_blank"
+         rel="noopener">
+        Voir en ligne ↗
+      </a>
+    }
+  </app-page-header>
+
+  <!-- Bandeau de complétude -->
+  @if (completeness(); as score) {
+    <section class="score">
+      <div class="score__bar" role="progressbar" [attr.aria-valuenow]="score.score"
+           aria-valuemin="0" aria-valuemax="100" aria-label="Complétude du profil">
+        <span class="score__fill" [style.width.%]="score.score"></span>
+      </div>
+      <div class="score__row">
+        <p class="score__label">
+          Profil complété à <strong>{{ score.score }} %</strong>
+        </p>
+        @if (pendingChecks().length > 0) {
+          <p class="score__hint">
+            Prochaine étape : {{ pendingChecks()[0].label }}
+          </p>
+        } @else {
+          <p class="score__hint score__hint--done">Toutes les sections essentielles sont remplies.</p>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- Onglets -->
+  <nav class="tabs" aria-label="Sections du profil">
+    @for (item of tabs; track item.id) {
+      <button type="button" class="tab" [class.tab--active]="tab() === item.id"
+              (click)="tab.set(item.id)"
+              [attr.aria-current]="tab() === item.id ? 'page' : null">
+        {{ item.label }}
+        @if (item.count; as count) {
+          @if (count() > 0) {
+            <span class="tab__count">{{ count() }}</span>
+          }
+        }
+      </button>
+    }
+  </nav>
+
+  <!-- ── Identité ── -->
+  @if (tab() === 'identity') {
+    <form class="ff-card ff-card--padded form" [formGroup]="form" (ngSubmit)="saveIdentity()" novalidate>
+      <div class="row">
+        <div class="ff-field">
+          <label class="ff-label ff-label--required" for="displayName">Nom affiché</label>
+          <input id="displayName" class="ff-input" formControlName="displayName" maxlength="120" />
+          @if (form.controls.displayName.invalid && form.controls.displayName.touched) {
+            <p class="ff-error">Le nom affiché est requis.</p>
+          }
+        </div>
+        <div class="ff-field">
+          <label class="ff-label" for="professionalTitle">Titre professionnel</label>
+          <input id="professionalTitle" class="ff-input" formControlName="professionalTitle"
+                 placeholder="Développeuse full-stack" maxlength="120" />
+        </div>
+      </div>
+
+      <div class="ff-field">
+        <label class="ff-label" for="headline">Accroche</label>
+        <input id="headline" class="ff-input" formControlName="headline"
+               placeholder="Une phrase qui résume ce que vous apportez" maxlength="180" />
+        <p class="ff-hint">Affichée en haut de votre portfolio et de vos CV.</p>
+      </div>
+
+      <div class="ff-field">
+        <label class="ff-label" for="summary">Résumé professionnel</label>
+        <textarea id="summary" class="ff-textarea" formControlName="summary" rows="6"
+                  maxlength="4000" (input)="onSummaryInput($event)"></textarea>
+        <p class="ff-hint">
+          {{ summaryLength() }} / 4000 caractères
+          @if (summaryLength() < 80) {
+            <span class="hint-warn">— visez au moins 80 caractères</span>
+          }
+        </p>
+      </div>
+
+      <div class="row">
+        <div class="ff-field">
+          <label class="ff-label" for="location">Localisation</label>
+          <input id="location" class="ff-input" formControlName="location"
+                 placeholder="Cotonou, Bénin" maxlength="160" />
+        </div>
+        <div class="ff-field">
+          <label class="ff-label" for="phone">Téléphone</label>
+          <input id="phone" class="ff-input" formControlName="phone" maxlength="40" />
+        </div>
+      </div>
+
+      <div class="ff-field">
+        <label class="ff-label" for="publicEmail">Email public</label>
+        <input id="publicEmail" type="email" class="ff-input" formControlName="publicEmail"
+               placeholder="contact@exemple.com" />
+        @if (form.controls.publicEmail.invalid && form.controls.publicEmail.touched) {
+          <p class="ff-error">Adresse email invalide.</p>
+        }
+      </div>
+
+      <hr class="ff-divider" />
+
+      <p class="ff-eyebrow">Liens professionnels</p>
+
+      <div class="row">
+        <div class="ff-field">
+          <label class="ff-label" for="websiteUrl">Site web</label>
+          <input id="websiteUrl" type="url" class="ff-input" formControlName="websiteUrl"
+                 placeholder="https://" />
+        </div>
+        <div class="ff-field">
+          <label class="ff-label" for="linkedinUrl">LinkedIn</label>
+          <input id="linkedinUrl" type="url" class="ff-input" formControlName="linkedinUrl"
+                 placeholder="https://linkedin.com/in/…" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="ff-field">
+          <label class="ff-label" for="githubUrl">GitHub</label>
+          <input id="githubUrl" type="url" class="ff-input" formControlName="githubUrl"
+                 placeholder="https://github.com/…" />
+        </div>
+        <div class="ff-field">
+          <label class="ff-label" for="twitterUrl">X / Twitter</label>
+          <input id="twitterUrl" type="url" class="ff-input" formControlName="twitterUrl"
+                 placeholder="https://" />
+        </div>
+      </div>
+
+      <div class="ff-field">
+        <label class="ff-label" for="dribbbleUrl">Dribbble</label>
+        <input id="dribbbleUrl" type="url" class="ff-input" formControlName="dribbbleUrl"
+               placeholder="https://" />
+      </div>
+
+      <footer class="form__actions">
+        <button type="submit" class="ff-btn ff-btn--primary" [disabled]="saving()">
+          {{ saving() ? 'Enregistrement…' : 'Enregistrer' }}
+        </button>
+      </footer>
+    </form>
+  }
+
+  <!-- ── Compétences ── -->
+  @if (tab() === 'skills') {
+    <section class="ff-card ff-card--padded">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Compétences</h2>
+          <p class="section-sub">Au moins 5 compétences améliorent sensiblement vos CV.</p>
+        </div>
+        <button type="button" class="ff-btn ff-btn--primary ff-btn--sm" (click)="openSkill()">
+          Ajouter
+        </button>
+      </div>
+
+      @if (skills().length === 0) {
+        <p class="empty">Aucune compétence pour l’instant.</p>
+      } @else {
+        <ul class="items">
+          @for (skill of skills(); track skill.id) {
+            <li class="item">
+              <div class="item__main">
+                <div class="item__title-row">
+                  <span class="item__title">{{ skill.name }}</span>
+                  @if (skill.featured) {
+                    <span class="ff-badge ff-badge--accent">En avant</span>
+                  }
+                  <span class="ff-badge">{{ skillLevel(skill.level) }}</span>
+                </div>
+                <p class="item__meta">
+                  {{ skill.category || 'Sans catégorie' }}
+                  @if (skill.yearsOfExperience) {
+                    · {{ skill.yearsOfExperience }} an(s)
+                  }
+                </p>
+              </div>
+              <div class="item__actions">
+                <button type="button" class="ff-btn ff-btn--ghost ff-btn--sm"
+                        (click)="openSkill(skill)">Modifier</button>
+                <button type="button" class="ff-btn ff-btn--ghost ff-btn--sm danger"
+                        (click)="deleteSkill(skill)">Supprimer</button>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  }
+
+  <!-- ── Expériences ── -->
+  @if (tab() === 'experiences') {
+    <section class="ff-card ff-card--padded">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Expériences</h2>
+          <p class="section-sub">Du plus récent au plus ancien.</p>
+        </div>
+        <button type="button" class="ff-btn ff-btn--primary ff-btn--sm" (click)="openExperience()">
+          Ajouter
+        </button>
+      </div>
+
+      @if (experiences().length === 0) {
+        <p class="empty">Aucune expérience enregistrée.</p>
+      } @else {
+        <ul class="items">
+          @for (item of experiences(); track item.id) {
+            <li class="item">
+              <div class="item__main">
+                <div class="item__title-row">
+                  <span class="item__title">{{ item.role }}</span>
+                  <span class="ff-badge">{{ expType(item.type) }}</span>
+                </div>
+                <p class="item__meta">
+                  {{ item.company }} · {{ period(item.startDate, item.endDate) }}
+                </p>
+                @if (item.description) {
+                  <p class="item__desc">{{ item.description }}</p>
+                }
+              </div>
+              <div class="item__actions">
+                <button type="button" class="ff-btn ff-btn--ghost ff-btn--sm"
+                        (click)="openExperience(item)">Modifier</button>
+                <button type="button" class="ff-btn ff-btn--ghost ff-btn--sm danger"
+                        (click)="deleteExperience(item)">Supprimer</button>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  }
+
+  <!-- ── Projets ── -->
+  @if (tab() === 'projects') {
+    <section class="ff-card ff-card--padded">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Projets</h2>
+          <p class="section-sub">Ce que vous avez construit, et avec quel effet.</p>
+        </div>
+        <button type="button" class="ff-btn ff-btn--primary ff-btn--sm" (click)="openProject()">
+          Ajouter
+        </button>
+      </div>
+
+      @if (projects().length === 0) {
+        <p class="empty">Aucun projet enregistré.</p>
+      } @else {
+        <ul class="items">
+          @for (item of projects(); track item.id) {
+            <li class="item">
+              <div class="item__main">
+                <div class="item__title-row">
+                  <span class="item__title">{{ item.title }}</span>
+                  <span class="ff-badge">{{ projectStatus(item.status) }}</span>
+                  @if (item.isHighlighted) {
+                    <span class="ff-badge ff-badge--accent">En avant</span>
+                  }
+                </div>
+                @if (item.subtitle) {
+                  <p class="item__meta">{{ item.subtitle }}</p>
+                }
+                @if (item.technologies?.length) {
+                  <p class="item__tags">
+                    @for (tech of item.technologies; track tech) {
+                      <span class="tag">{{ tech }}</span>
+                    }
+                  </p>
+                }
+              </div>
+              <div class="item__actions">
+                <button type="button" class="ff-btn ff-btn--ghost ff-btn--sm"
+                        (click)="openProject(item)">Modifier</button>
+                <button type="button" class="ff-btn ff-btn--ghost ff-btn--sm danger"
+                        (click)="deleteProject(item)">Supprimer</button>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  }
+
+  <!-- ── Formations ── -->
+  @if (tab() === 'educations') {
+    <section class="ff-card ff-card--padded">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Formations</h2>
+          <p class="section-sub">Diplômes, certifications et formations continues.</p>
+        </div>
+        <button type="button" class="ff-btn ff-btn--primary ff-btn--sm" (click)="openEducation()">
+          Ajouter
+        </button>
+      </div>
+
+      @if (educations().length === 0) {
+        <p class="empty">Aucune formation enregistrée.</p>
+      } @else {
+        <ul class="items">
+          @for (item of educations(); track item.id) {
+            <li class="item">
+              <div class="item__main">
+                <div class="item__title-row">
+                  <span class="item__title">{{ item.title }}</span>
+                  <span class="ff-badge">{{ eduKind(item.kind) }}</span>
+                </div>
+                <p class="item__meta">
+                  {{ item.institution }} · {{ period(item.startDate, item.endDate) }}
+                </p>
+              </div>
+              <div class="item__actions">
+                <button type="button" class="ff-btn ff-btn--ghost ff-btn--sm"
+                        (click)="openEducation(item)">Modifier</button>
+                <button type="button" class="ff-btn ff-btn--ghost ff-btn--sm danger"
+                        (click)="deleteEducation(item)">Supprimer</button>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  }
+
+  <!-- ── Langues ── -->
+  @if (tab() === 'languages') {
+    <section class="ff-card ff-card--padded">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Langues</h2>
+          <p class="section-sub">Utile pour les candidatures internationales.</p>
+        </div>
+        <button type="button" class="ff-btn ff-btn--primary ff-btn--sm" (click)="openLanguage()">
+          Ajouter
+        </button>
+      </div>
+
+      @if (languages().length === 0) {
+        <p class="empty">Aucune langue enregistrée.</p>
+      } @else {
+        <ul class="items">
+          @for (item of languages(); track item.id) {
+            <li class="item">
+              <div class="item__main">
+                <div class="item__title-row">
+                  <span class="item__title">{{ item.name }}</span>
+                  <span class="ff-badge">{{ item.level }}</span>
+                  @if (item.isNative) {
+                    <span class="ff-badge ff-badge--accent">Maternelle</span>
+                  }
+                </div>
+              </div>
+              <div class="item__actions">
+                <button type="button" class="ff-btn ff-btn--ghost ff-btn--sm"
+                        (click)="openLanguage(item)">Modifier</button>
+                <button type="button" class="ff-btn ff-btn--ghost ff-btn--sm danger"
+                        (click)="deleteLanguage(item)">Supprimer</button>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  }
+
+  <!-- ── Portfolio public ── -->
+  @if (tab() === 'portfolio') {
+    <section class="ff-card ff-card--padded">
+      <h2 class="section-title">Portfolio public</h2>
+      <p class="section-sub">
+        Choisissez ce que le monde voit. Ces réglages n’affectent pas vos CV.
+      </p>
+
+      @if (profile(); as p) {
+        <dl class="facts">
+          <div class="fact">
+            <dt>Adresse publique</dt>
+            <dd>
+              @if (p.slug) {
+                <a [routerLink]="['/p', p.slug]" target="_blank" rel="noopener">/p/{{ p.slug }} ↗</a>
+              } @else {
+                <span class="muted">—</span>
+              }
+            </dd>
+          </div>
+          <div class="fact">
+            <dt>Visibilité</dt>
+            <dd><span class="ff-badge">{{ p.visibility }}</span></dd>
+          </div>
+          <div class="fact">
+            <dt>Indexé par les moteurs</dt>
+            <dd>{{ p.indexable ? 'Oui' : 'Non' }}</dd>
+          </div>
+          <div class="fact">
+            <dt>Email affiché</dt>
+            <dd>{{ p.showEmail ? 'Oui' : 'Non' }}</dd>
+          </div>
+          <div class="fact">
+            <dt>Téléphone affiché</dt>
+            <dd>{{ p.showPhone ? 'Oui' : 'Non' }}</dd>
+          </div>
+          <div class="fact">
+            <dt>Formulaire de contact</dt>
+            <dd>{{ p.contactEnabled ? 'Activé' : 'Désactivé' }}</dd>
+          </div>
+        </dl>
+
+        <p class="ff-hint">
+          La modification fine de ces réglages (couleur d’accent, sections affichées,
+          modèle de portfolio) sera disponible dans une prochaine version.
+        </p>
+      }
+    </section>
+  }
+
+  <!-- Dialogues d'édition -->
+  @if (editingSkill() !== undefined) {
+    <app-section-editor kind="skill" [value]="editingSkill()" (saved)="saveSkill($event)"
+                        (cancelled)="closeSkill()" />
+  }
+  @if (editingExperience() !== undefined) {
+    <app-section-editor kind="experience" [value]="editingExperience()"
+                        (saved)="saveExperience($event)" (cancelled)="closeExperience()" />
+  }
+  @if (editingProject() !== undefined) {
+    <app-section-editor kind="project" [value]="editingProject()" (saved)="saveProject($event)"
+                        (cancelled)="closeProject()" />
+  }
+  @if (editingEducation() !== undefined) {
+    <app-section-editor kind="education" [value]="editingEducation()"
+                        (saved)="saveEducation($event)" (cancelled)="closeEducation()" />
+  }
+  @if (editingLanguage() !== undefined) {
+    <app-section-editor kind="language" [value]="editingLanguage()"
+                        (saved)="saveLanguage($event)" (cancelled)="closeLanguage()" />
+  }
+}

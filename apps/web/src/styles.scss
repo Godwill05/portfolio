@@ -1,1 +1,427 @@
-/* You can add global styles to this file, and also import other style files */
+@use './styles/tokens' as *;
+
+/* Les polices sont déclarées dans angular.json (globaux), ce qui évite
+   l'avertissement de dépréciation de `@import` en Sass. */
+
+/* ── Reset ─────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--ff-bg);
+  color: var(--ff-ink);
+  font-family: var(--ff-font-body);
+  font-size: var(--ff-text-base);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'cv05' 1, 'cv08' 1;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--ff-font-display);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  margin: 0;
+  font-variation-settings: 'SOFT' 0, 'WONK' 0;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: var(--ff-accent);
+  text-decoration: none;
+  text-underline-offset: 2px;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+code,
+kbd,
+pre,
+samp {
+  font-family: var(--ff-font-mono);
+  font-size: 0.875em;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* ── Accessibilité ─────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--ff-accent);
+  outline-offset: 2px;
+  border-radius: var(--ff-radius-sm);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Primitives réutilisables ──────────────────────────────── */
+
+/* Carte */
+.ff-card {
+  background: var(--ff-surface);
+  border: 1px solid var(--ff-line);
+  border-radius: var(--ff-radius-lg);
+  box-shadow: var(--ff-shadow-xs);
+}
+
+.ff-card--padded {
+  padding: var(--ff-6);
+}
+
+/* Boutons */
+.ff-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ff-2);
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--ff-radius);
+  border: 1px solid transparent;
+  font-size: var(--ff-text-sm);
+  font-weight: 550;
+  line-height: 1.4;
+  white-space: nowrap;
+  transition:
+    background var(--ff-transition),
+    border-color var(--ff-transition),
+    color var(--ff-transition),
+    box-shadow var(--ff-transition);
+}
+
+.ff-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ff-btn--primary {
+  background: var(--ff-accent);
+  color: #fff;
+  border-color: var(--ff-accent);
+}
+
+.ff-btn--primary:hover:not(:disabled) {
+  background: var(--ff-accent-hover);
+  border-color: var(--ff-accent-hover);
+}
+
+.ff-btn--secondary {
+  background: var(--ff-surface);
+  color: var(--ff-ink);
+  border-color: var(--ff-line-strong);
+}
+
+.ff-btn--secondary:hover:not(:disabled) {
+  background: var(--ff-surface-muted);
+}
+
+.ff-btn--ghost {
+  background: transparent;
+  color: var(--ff-ink-soft);
+}
+
+.ff-btn--ghost:hover:not(:disabled) {
+  background: var(--ff-surface-muted);
+  color: var(--ff-ink);
+}
+
+.ff-btn--danger {
+  background: var(--ff-danger);
+  color: #fff;
+  border-color: var(--ff-danger);
+}
+
+.ff-btn--sm {
+  padding: 0.3rem 0.6rem;
+  font-size: var(--ff-text-xs);
+}
+
+.ff-btn--lg {
+  padding: 0.7rem 1.25rem;
+  font-size: var(--ff-text-base);
+}
+
+/* Champs */
+.ff-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ff-2);
+}
+
+.ff-label {
+  font-size: var(--ff-text-sm);
+  font-weight: 550;
+  color: var(--ff-ink-soft);
+}
+
+.ff-label--required::after {
+  content: ' *';
+  color: var(--ff-danger);
+}
+
+.ff-input,
+.ff-textarea,
+.ff-select {
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  background: var(--ff-surface);
+  border: 1px solid var(--ff-line-strong);
+  border-radius: var(--ff-radius);
+  font-size: var(--ff-text-base);
+  transition:
+    border-color var(--ff-transition),
+    box-shadow var(--ff-transition);
+}
+
+.ff-input::placeholder,
+.ff-textarea::placeholder {
+  color: var(--ff-ink-faint);
+}
+
+.ff-input:focus,
+.ff-textarea:focus,
+.ff-select:focus {
+  outline: none;
+  border-color: var(--ff-accent);
+  box-shadow: 0 0 0 3px var(--ff-accent-soft);
+}
+
+.ff-textarea {
+  resize: vertical;
+  min-height: 5rem;
+  line-height: 1.55;
+}
+
+.ff-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5L6 8l3.5-3.5' fill='none' stroke='%2378746d' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.65rem center;
+  padding-right: 2rem;
+}
+
+.ff-input--invalid,
+.ff-textarea--invalid {
+  border-color: var(--ff-danger);
+}
+
+.ff-input--invalid:focus,
+.ff-textarea--invalid:focus {
+  box-shadow: 0 0 0 3px var(--ff-danger-soft);
+}
+
+.ff-hint {
+  font-size: var(--ff-text-xs);
+  color: var(--ff-ink-muted);
+}
+
+.ff-error {
+  font-size: var(--ff-text-xs);
+  color: var(--ff-danger);
+  font-weight: 500;
+}
+
+/* Badges */
+.ff-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--ff-radius-sm);
+  font-size: var(--ff-text-xs);
+  font-weight: 550;
+  line-height: 1.5;
+  background: var(--ff-surface-muted);
+  color: var(--ff-ink-soft);
+  border: 1px solid var(--ff-line);
+}
+
+.ff-badge--accent {
+  background: var(--ff-accent-soft);
+  color: var(--ff-accent);
+  border-color: var(--ff-accent-line);
+}
+
+.ff-badge--danger {
+  background: var(--ff-danger-soft);
+  color: var(--ff-danger);
+  border-color: transparent;
+}
+
+.ff-badge--warning {
+  background: var(--ff-warning-soft);
+  color: var(--ff-warning);
+  border-color: transparent;
+}
+
+.ff-badge--info {
+  background: var(--ff-info-soft);
+  color: var(--ff-info);
+  border-color: transparent;
+}
+
+/* Titres de section */
+.ff-eyebrow {
+  font-size: var(--ff-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ff-ink-muted);
+}
+
+/* Divider */
+.ff-divider {
+  height: 1px;
+  background: var(--ff-line);
+  border: 0;
+  margin: var(--ff-6) 0;
+}
+
+/* Filet de chargement indéterminé */
+@keyframes ff-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.ff-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--ff-surface-muted) 25%,
+    var(--ff-surface-sunken) 50%,
+    var(--ff-surface-muted) 75%
+  );
+  background-size: 200% 100%;
+  animation: ff-shimmer 1.4s ease-in-out infinite;
+  border-radius: var(--ff-radius-sm);
+}
+
+/* Markdown rendu (réponses IA) */
+.ff-prose {
+  line-height: 1.7;
+  color: var(--ff-ink-soft);
+}
+
+.ff-prose > * + * {
+  margin-top: 0.75em;
+}
+
+.ff-prose h1,
+.ff-prose h2,
+.ff-prose h3 {
+  font-size: var(--ff-text-md);
+  color: var(--ff-ink);
+  margin-top: 1.25em;
+}
+
+.ff-prose ul,
+.ff-prose ol {
+  padding-left: 1.4em;
+}
+
+.ff-prose li + li {
+  margin-top: 0.3em;
+}
+
+.ff-prose code {
+  background: var(--ff-surface-muted);
+  padding: 0.1em 0.35em;
+  border-radius: var(--ff-radius-sm);
+  font-size: 0.85em;
+}
+
+.ff-prose pre {
+  background: var(--ff-surface-sunken);
+  padding: var(--ff-4);
+  border-radius: var(--ff-radius);
+  overflow-x: auto;
+}
+
+.ff-prose pre code {
+  background: none;
+  padding: 0;
+}
+
+.ff-prose blockquote {
+  border-left: 3px solid var(--ff-accent-line);
+  padding-left: var(--ff-4);
+  color: var(--ff-ink-muted);
+  margin: 0;
+}
+
+.ff-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--ff-text-sm);
+}
+
+.ff-prose th,
+.ff-prose td {
+  border: 1px solid var(--ff-line);
+  padding: var(--ff-2) var(--ff-3);
+  text-align: left;
+}
+
+.ff-prose th {
+  background: var(--ff-surface-muted);
+  font-weight: 600;
+}

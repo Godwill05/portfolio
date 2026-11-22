@@ -1,0 +1,152 @@
+<div class="window">
+  <span class="window__label">Période</span>
+  <div class="window__options" role="group" aria-label="Période d’analyse">
+    @for (option of windowOptions; track option) {
+      <button type="button" class="window__btn"
+              [class.window__btn--active]="days() === option"
+              (click)="setWindow(option)">
+        {{ option }} j
+      </button>
+    }
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="tiles">
+    @for (i of [1, 2, 3, 4]; track i) {
+      <div class="ff-card ff-card--padded">
+        <div class="ff-skeleton" style="height: 0.7rem; width: 45%"></div>
+        <div class="ff-skeleton" style="height: 1.8rem; width: 55%; margin-top: 0.7rem"></div>
+      </div>
+    }
+  </div>
+} @else if (overview(); as data) {
+  <!-- Chiffres principaux -->
+  <div class="tiles">
+    <article class="ff-card ff-card--padded tile">
+      <p class="tile__label">Utilisateurs</p>
+      <p class="tile__value">{{ num(data.users.total) }}</p>
+      <p class="tile__foot">
+        {{ num(data.users.newInWindow) }} nouveau(x) sur la période
+      </p>
+    </article>
+
+    <article class="ff-card ff-card--padded tile">
+      <p class="tile__label">Profils publiés</p>
+      <p class="tile__value">{{ num(data.content.publishedProfiles) }}</p>
+      <p class="tile__foot">sur {{ num(data.content.profiles) }} profil(s)</p>
+    </article>
+
+    <article class="ff-card ff-card--padded tile">
+      <p class="tile__label">Requêtes IA</p>
+      <p class="tile__value">{{ num(data.ai.requests) }}</p>
+      <p class="tile__foot">
+        {{ pct(data.ai.successRate) }} de réussite · {{ num(data.ai.failures) }} échec(s)
+      </p>
+    </article>
+
+    <article class="ff-card ff-card--padded tile">
+      <p class="tile__label">Revenus</p>
+      <p class="tile__value">{{ money(data.billing.paidTotal, data.billing.currency) }}</p>
+      <p class="tile__foot">{{ num(data.billing.rewardedAdClaims) }} publicité(s) récompensée(s)</p>
+    </article>
+  </div>
+
+  <!-- Graphique -->
+  <section class="ff-card ff-card--padded">
+    <div class="card-head">
+      <h2 class="card-title">Activité quotidienne</h2>
+      <div class="legend">
+        <span class="legend__item"><span class="legend__dot legend__dot--signup"></span>Inscriptions</span>
+        <span class="legend__item"><span class="legend__dot legend__dot--ai"></span>Requêtes IA</span>
+      </div>
+    </div>
+
+    @if (chart().length === 0) {
+      <p class="ff-hint">Aucune donnée sur cette période.</p>
+    } @else {
+      <div class="chart" role="img" aria-label="Graphique des inscriptions et requêtes IA par jour">
+        @for (point of chart(); track point.day) {
+          <div class="chart__col" [attr.title]="point.day + ' — ' + point.signups + ' inscription(s), ' + point.aiRequests + ' requête(s) IA'">
+            <div class="chart__bars">
+              <span class="chart__bar chart__bar--signup" [style.height.%]="point.signupHeight"></span>
+              <span class="chart__bar chart__bar--ai" [style.height.%]="point.aiHeight"></span>
+            </div>
+            <span class="chart__label">{{ point.label }}</span>
+          </div>
+        }
+      </div>
+    }
+  </section>
+
+  <div class="columns">
+    <!-- IA par fonctionnalité -->
+    <section class="ff-card ff-card--padded">
+      <h2 class="card-title">Consommation IA par fonctionnalité</h2>
+
+      @if (data.ai.byFeature.length === 0) {
+        <p class="ff-hint">Aucune requête enregistrée.</p>
+      } @else {
+        <ul class="bars">
+          @for (feature of data.ai.byFeature; track feature.feature) {
+            <li class="bar">
+              <div class="bar__row">
+                <span class="bar__label">{{ featureLabel(feature.feature) }}</span>
+                <span class="bar__value">{{ num(feature.requests) }} · {{ num(feature.tokens) }} jetons</span>
+              </div>
+              <div class="bar__track">
+                <span class="bar__fill"
+                      [style.width.%]="share(feature.requests, [data.ai.requests])"></span>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+
+      <div class="total-row">
+        <span>Jetons consommés</span>
+        <strong>{{ num(totalTokens()) }}</strong>
+      </div>
+      <div class="total-row">
+        <span>Coût estimé</span>
+        <strong>{{ money(data.ai.estimatedCostUsd, 'USD') }}</strong>
+      </div>
+    </section>
+
+    <!-- Contenu & rôles -->
+    <section class="ff-card ff-card--padded">
+      <h2 class="card-title">Contenu et rôles</h2>
+
+      <ul class="facts">
+        <li class="fact"><span>CV créés</span><strong>{{ num(data.content.cvCount) }}</strong></li>
+        <li class="fact"><span>Compétences</span><strong>{{ num(data.content.skills) }}</strong></li>
+        <li class="fact"><span>Projets</span><strong>{{ num(data.content.projects) }}</strong></li>
+        <li class="fact"><span>Expériences</span><strong>{{ num(data.content.experiences) }}</strong></li>
+        <li class="fact"><span>Formations</span><strong>{{ num(data.content.educations) }}</strong></li>
+        <li class="fact"><span>Offres suivies</span><strong>{{ num(data.content.opportunities) }}</strong></li>
+      </ul>
+
+      <h3 class="sub-title">Répartition des rôles</h3>
+      <ul class="bars">
+        @for (role of roleEntries(data.users.byRole); track role.key) {
+          <li class="bar">
+            <div class="bar__row">
+              <span class="bar__label">{{ role.key }}</span>
+              <span class="bar__value">{{ num(role.value) }}</span>
+            </div>
+            <div class="bar__track">
+              <span class="bar__fill" [style.width.%]="share(role.value, [data.users.total])"></span>
+            </div>
+          </li>
+        }
+      </ul>
+
+      <h3 class="sub-title">État des comptes</h3>
+      <ul class="facts">
+        <li class="fact"><span>Actifs</span><strong>{{ num(data.users.active) }}</strong></li>
+        <li class="fact"><span>Vérifiés</span><strong>{{ num(data.users.verified) }}</strong></li>
+        <li class="fact"><span>Suspendus</span><strong>{{ num(data.users.suspended) }}</strong></li>
+      </ul>
+    </section>
+  </div>
+}

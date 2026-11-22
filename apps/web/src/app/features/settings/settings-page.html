@@ -1,0 +1,162 @@
+<app-page-header
+  eyebrow="Compte"
+  title="Paramètres"
+  subtitle="Identité, sécurité, sessions actives et préférences d’affichage."
+/>
+
+<div class="sections">
+  <!-- Compte -->
+  <section class="ff-card ff-card--padded">
+    <h2 class="title">Mon compte</h2>
+
+    @if (user(); as u) {
+      <div class="identity">
+        <span class="avatar" aria-hidden="true">{{ initials() }}</span>
+        <div class="identity__text">
+          <p class="identity__name">{{ u.firstName }} {{ u.lastName }}</p>
+          <p class="identity__email">{{ u.email }}</p>
+          <p class="identity__meta">
+            Membre depuis {{ when(u.createdAt) }}
+            @if (!u.emailVerified) {
+              <span class="ff-badge ff-badge--warning">Email non vérifié</span>
+            }
+          </p>
+        </div>
+      </div>
+    }
+  </section>
+
+  <!-- Apparence -->
+  <section class="ff-card ff-card--padded">
+    <h2 class="title">Apparence</h2>
+    <p class="sub">Le thème « système » suit les réglages de votre appareil.</p>
+
+    <div class="theme-picker" role="radiogroup" aria-label="Thème">
+      @for (item of themes; track item.id) {
+        <button
+          type="button"
+          class="theme-option"
+          [class.theme-option--active]="theme.mode() === item.id"
+          (click)="setTheme(item.id)"
+          role="radio"
+          [attr.aria-checked]="theme.mode() === item.id"
+        >
+          {{ item.label }}
+        </button>
+      }
+    </div>
+  </section>
+
+  <!-- Mot de passe -->
+  <section class="ff-card ff-card--padded">
+    <h2 class="title">Mot de passe</h2>
+    <p class="sub">
+      Modifier votre mot de passe ferme automatiquement toutes vos autres sessions.
+    </p>
+
+    <form class="form" [formGroup]="passwordForm" (ngSubmit)="changePassword()" novalidate>
+      <div class="ff-field">
+        <label class="ff-label ff-label--required" for="cur-pass">Mot de passe actuel</label>
+        <input id="cur-pass" type="password" class="ff-input" formControlName="currentPassword"
+               autocomplete="current-password" />
+        @if (passwordForm.controls.currentPassword.touched && passwordForm.controls.currentPassword.invalid) {
+          <p class="ff-error">Le mot de passe actuel est requis.</p>
+        }
+      </div>
+
+      <div class="ff-field">
+        <label class="ff-label ff-label--required" for="new-pass">Nouveau mot de passe</label>
+        <input id="new-pass" type="password" class="ff-input" formControlName="newPassword"
+               autocomplete="new-password" />
+        <p class="ff-hint">10 caractères minimum, avec une majuscule, une minuscule et un chiffre.</p>
+        @if (passwordForm.controls.newPassword.touched && passwordForm.controls.newPassword.invalid) {
+          <p class="ff-error">Le mot de passe ne respecte pas ces règles.</p>
+        }
+      </div>
+
+      <button type="submit" class="ff-btn ff-btn--primary" [disabled]="passwordBusy()">
+        {{ passwordBusy() ? 'Modification…' : 'Modifier le mot de passe' }}
+      </button>
+    </form>
+  </section>
+
+  <!-- Sessions -->
+  <section class="ff-card ff-card--padded">
+    <div class="head-row">
+      <div>
+        <h2 class="title">Sessions actives</h2>
+        <p class="sub">Les appareils actuellement connectés à votre compte.</p>
+      </div>
+      @if (sessions().length > 1) {
+        <button type="button" class="ff-btn ff-btn--secondary ff-btn--sm" (click)="revokeAll()">
+          Fermer les autres
+        </button>
+      }
+    </div>
+
+    @if (sessionsLoading()) {
+      <div class="ff-skeleton" style="height: 6rem; width: 100%"></div>
+    } @else if (sessions().length === 0) {
+      <p class="ff-hint">Aucune session active.</p>
+    } @else {
+      <ul class="sessions">
+        @for (session of sessions(); track session.id) {
+          <li class="session">
+            <div class="session__main">
+              <p class="session__device">
+                {{ session.device }}
+                @if (session.current) {
+                  <span class="ff-badge ff-badge--accent">Session actuelle</span>
+                }
+              </p>
+              <p class="session__meta">
+                {{ session.ipAddress || 'IP inconnue' }} · dernière activité
+                {{ when(session.lastUsedAt) }}
+              </p>
+            </div>
+            @if (!session.current) {
+              <button type="button" class="ff-btn ff-btn--ghost ff-btn--sm danger"
+                      (click)="revoke(session)">
+                Fermer
+              </button>
+            }
+          </li>
+        }
+      </ul>
+    }
+  </section>
+
+  <!-- Suppression -->
+  <section class="ff-card ff-card--padded danger-zone">
+    <h2 class="title title--danger">Supprimer mon compte</h2>
+    <p class="sub">
+      Votre profil sera masqué immédiatement. Cette action est réversible par un
+      administrateur pendant 30 jours, puis définitive.
+    </p>
+
+    @if (!confirmingDelete()) {
+      <button type="button" class="ff-btn ff-btn--danger" (click)="confirmingDelete.set(true)">
+        Supprimer mon compte
+      </button>
+    } @else {
+      <form class="form" [formGroup]="deleteForm" (ngSubmit)="deleteAccount()" novalidate>
+        <div class="ff-field">
+          <label class="ff-label ff-label--required" for="del-pass">
+            Confirmez avec votre mot de passe
+          </label>
+          <input id="del-pass" type="password" class="ff-input" formControlName="password"
+                 autocomplete="current-password" />
+        </div>
+
+        <div class="confirm-actions">
+          <button type="button" class="ff-btn ff-btn--secondary" (click)="confirmingDelete.set(false)">
+            Annuler
+          </button>
+          <button type="submit" class="ff-btn ff-btn--danger" [disabled]="deleteBusy()">
+            {{ deleteBusy() ? 'Suppression…' : 'Confirmer la suppression' }}
+          </button>
+        </div>
+      </form>
+    }
+  </section>
+</div>

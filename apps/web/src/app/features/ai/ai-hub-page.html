@@ -1,0 +1,438 @@
+<app-page-header
+  eyebrow="Assistant"
+  title="Intelligence artificielle"
+  subtitle="Cinq outils alimentés par votre profil réel. L’assistant ne doit rien inventer de votre parcours."
+>
+  @if (quota(); as q) {
+    <span class="quota-pill" [class.quota-pill--low]="remainingForActive() === 0">
+      @if (q.unlimited) {
+        Crédits illimités
+      } @else {
+        {{ remainingForActive() }} crédit(s) restant(s)
+      }
+    </span>
+  }
+</app-page-header>
+
+<!-- Sélecteur d'outil -->
+<nav class="tools" aria-label="Outils disponibles">
+  @for (item of tools; track item.id) {
+    <button
+      type="button"
+      class="tool"
+      [class.tool--active]="tool() === item.id"
+      (click)="tool.set(item.id)"
+      [attr.aria-pressed]="tool() === item.id"
+    >
+      <span class="tool__label">{{ item.label }}</span>
+      <span class="tool__hint">{{ item.hint }}</span>
+    </button>
+  }
+</nav>
+
+<!-- ══════════ CHAT ══════════ -->
+@if (tool() === 'chat') {
+  <div class="chat">
+    <aside class="chat__sidebar">
+      <button type="button" class="ff-btn ff-btn--secondary ff-btn--sm new-btn"
+              (click)="newConversation()">
+        + Nouvelle conversation
+      </button>
+
+      <ul class="conv-list">
+        @for (conversation of conversations(); track conversation.id) {
+          <li>
+            <button
+              type="button"
+              class="conv"
+              [class.conv--active]="activeId() === conversation.id"
+              (click)="openConversation(conversation.id)"
+            >
+              <span class="conv__title">{{ conversation.title }}</span>
+              <span class="conv__meta">{{ relative(conversation.updatedAt) }}</span>
+              <span
+                class="conv__delete"
+                role="button"
+                tabindex="0"
+                aria-label="Supprimer la conversation"
+                (click)="deleteConversation(conversation.id, $event)"
+                (keydown.enter)="deleteConversation(conversation.id, $event)"
+              >✕</span>
+            </button>
+          </li>
+        } @empty {
+          <li class="conv-empty">Aucune conversation enregistrée.</li>
+        }
+      </ul>
+    </aside>
+
+    <section class="chat__main">
+      <div class="thread">
+        @if (messages().length === 0) {
+          <div class="thread__empty">
+            <p class="thread__welcome">Comment puis-je vous aider ?</p>
+            <p class="thread__hint">
+              L’assistant connaît votre profil, vos CV et vos offres suivies.
+              Posez une question sur votre parcours, une candidature, ou la suite à donner.
+            </p>
+          </div>
+        }
+
+        @for (line of messages(); track $index) {
+          <div class="msg" [class.msg--user]="line.role === 'user'">
+            <div class="msg__avatar" aria-hidden="true">
+              {{ line.role === 'user' ? 'Vous' : 'IA' }}
+            </div>
+            <div class="msg__bubble">
+              @if (line.role === 'assistant') {
+                @if (line.content) {
+                  <div class="ff-prose" [innerHTML]="line.content | markdown"></div>
+                } @else {
+                  <div class="typing" aria-label="L’assistant rédige">
+                    <span></span><span></span><span></span>
+                  </div>
+                }
+                @if (line.streaming) {
+                  <span class="caret" aria-hidden="true"></span>
+                }
+              } @else {
+                <p class="msg__text">{{ line.content }}</p>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <form class="composer" [formGroup]="chatForm" (ngSubmit)="send()">
+        <textarea
+          class="composer__input"
+          formControlName="message"
+          rows="1"
+          placeholder="Posez votre question… (Entrée pour envoyer, Maj+Entrée pour un retour à la ligne)"
+          (keydown)="onKeydown($event)"
+          [attr.aria-label]="'Message à l’assistant'"
+        ></textarea>
+
+        @if (streaming()) {
+          <button type="button" class="ff-btn ff-btn--secondary ff-btn--sm" (click)="stopStreaming()">
+            Arrêter
+          </button>
+        } @else {
+          <button type="submit" class="ff-btn ff-btn--primary ff-btn--sm" [disabled]="!canSend()">
+            Envoyer
+          </button>
+        }
+      </form>
+      <p class="composer__note">
+        Les réponses peuvent contenir des erreurs. Vérifiez toujours les informations
+        avant de les envoyer à un recruteur.
+      </p>
+    </section>
+  </div>
+}
+
+<!-- ══════════ ANALYSE D'OFFRE ══════════ -->
+@if (tool() === 'job') {
+  <div class="split">
+    <form class="ff-card ff-card--padded form" [formGroup]="jobForm" (ngSubmit)="analyzeJob()">
+      <div class="grid2">
+        <div class="ff-field">
+          <label class="ff-label" for="job-title">Intitulé du poste</label>
+          <input id="job-title" class="ff-input" formControlName="title" maxlength="200" />
+        </div>
+        <div class="ff-field">
+          <label class="ff-label" for="job-company">Entreprise</label>
+          <input id="job-company" class="ff-input" formControlName="company" maxlength="200" />
+        </div>
+      </div>
+
+      <div class="ff-field">
+        <label class="ff-label ff-label--required" for="job-text">Texte de l’annonce</label>
+        <textarea id="job-text" class="ff-textarea" formControlName="text" rows="14"
+                  placeholder="Collez ici l’intégralité de l’annonce…"></textarea>
+        <p class="ff-hint">
+          {{ jobForm.controls.text.value.length }} / 40 000 caractères — 80 minimum pour une analyse utile.
+        </p>
+        @if (jobForm.controls.text.touched && jobForm.controls.text.invalid) {
+          <p class="ff-error">Le texte doit contenir au moins 80 caractères.</p>
+        }
+      </div>
+
+      <button type="submit" class="ff-btn ff-btn--primary" [disabled]="jobBusy()">
+        {{ jobBusy() ? 'Analyse…' : 'Analyser cette offre' }}
+      </button>
+    </form>
+
+    <div class="result-col">
+      @if (jobResult(); as result) {
+        <div class="ff-card ff-card--padded">
+          <div class="score" [class]="'score score--' + scoreTone(result.matchScore)">
+            <div class="score__dial">
+              <span class="score__value">{{ result.matchScore }}</span>
+              <span class="score__unit">/ 100</span>
+            </div>
+            <div>
+              <p class="score__label">Correspondance estimée</p>
+              @if (result.source?.fetched) {
+                <p class="score__source">Offre récupérée depuis {{ result.source?.url }}</p>
+              }
+            </div>
+          </div>
+
+          @if (result.summary) {
+            <p class="result-text">{{ result.summary }}</p>
+          }
+
+          @if (asList(result.matchedSkills).length) {
+            <div class="result-group">
+              <p class="result-label result-label--ok">Compétences déjà présentes</p>
+              <p class="chips">
+                @for (skill of asList(result.matchedSkills); track skill) {
+                  <span class="chip chip--ok">{{ skill }}</span>
+                }
+              </p>
+            </div>
+          }
+
+          @if (asList(result.missingSkills).length) {
+            <div class="result-group">
+              <p class="result-label result-label--warn">Compétences à acquérir</p>
+              <p class="chips">
+                @for (skill of asList(result.missingSkills); track skill) {
+                  <span class="chip chip--warn">{{ skill }}</span>
+                }
+              </p>
+            </div>
+          }
+
+          @if (asList(result.strengths).length) {
+            <div class="result-group">
+              <p class="result-label">Points forts</p>
+              <ul class="result-list">
+                @for (item of asList(result.strengths); track item) {
+                  <li>{{ item }}</li>
+                }
+              </ul>
+            </div>
+          }
+
+          @if (asList(result.gaps).length) {
+            <div class="result-group">
+              <p class="result-label">Points de vigilance</p>
+              <ul class="result-list">
+                @for (item of asList(result.gaps); track item) {
+                  <li>{{ item }}</li>
+                }
+              </ul>
+            </div>
+          }
+
+          @if (asList(result.recommendations).length) {
+            <div class="result-group">
+              <p class="result-label">Recommandations</p>
+              <ul class="result-list">
+                @for (item of asList(result.recommendations); track item) {
+                  <li>{{ item }}</li>
+                }
+              </ul>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="ff-card ff-card--padded placeholder">
+          <p class="placeholder__title">Aucune analyse pour l’instant</p>
+          <p class="placeholder__text">
+            Collez une annonce à gauche. Vous obtiendrez un score de correspondance
+            basé sur votre profil réel, les compétences manquantes et des
+            recommandations concrètes.
+          </p>
+        </div>
+      }
+    </div>
+  </div>
+}
+
+<!-- ══════════ LETTRE DE MOTIVATION ══════════ -->
+@if (tool() === 'cover') {
+  <div class="split">
+    <form class="ff-card ff-card--padded form" [formGroup]="coverForm" (ngSubmit)="writeCoverLetter()">
+      <div class="grid2">
+        <div class="ff-field">
+          <label class="ff-label ff-label--required" for="cl-title">Poste</label>
+          <input id="cl-title" class="ff-input" formControlName="jobTitle" maxlength="200" />
+        </div>
+        <div class="ff-field">
+          <label class="ff-label" for="cl-company">Entreprise</label>
+          <input id="cl-company" class="ff-input" formControlName="company" maxlength="200" />
+        </div>
+      </div>
+
+      <div class="ff-field">
+        <label class="ff-label ff-label--required" for="cl-text">Texte de l’annonce</label>
+        <textarea id="cl-text" class="ff-textarea" formControlName="jobText" rows="12"
+                  placeholder="L’assistant s’en sert pour cibler la lettre…"></textarea>
+      </div>
+
+      <button type="submit" class="ff-btn ff-btn--primary" [disabled]="coverBusy()">
+        {{ coverBusy() ? 'Rédaction…' : 'Rédiger la lettre' }}
+      </button>
+    </form>
+
+    <div class="result-col">
+      @if (coverResult(); as letter) {
+        <div class="ff-card ff-card--padded">
+          <div class="letter-head">
+            <p class="ff-eyebrow">Lettre générée</p>
+            <button type="button" class="ff-btn ff-btn--secondary ff-btn--sm" (click)="copyCoverLetter()">
+              Copier
+            </button>
+          </div>
+          @if (letter.subject) {
+            <p class="letter-subject">{{ letter.subject }}</p>
+          }
+          <div class="letter-body">{{ letter.body }}</div>
+          @if (letter.wordCount) {
+            <p class="ff-hint">{{ letter.wordCount }} mots</p>
+          }
+        </div>
+      } @else {
+        <div class="ff-card ff-card--padded placeholder">
+          <p class="placeholder__title">Votre lettre apparaîtra ici</p>
+          <p class="placeholder__text">
+            Elle s’appuie sur votre parcours réel et sur l’annonce fournie.
+            Relisez-la toujours avant l’envoi.
+          </p>
+        </div>
+      }
+    </div>
+  </div>
+}
+
+<!-- ══════════ PLAN DE CARRIÈRE ══════════ -->
+@if (tool() === 'career') {
+  <div class="split">
+    <form class="ff-card ff-card--padded form" [formGroup]="careerForm" (ngSubmit)="planCareer()">
+      <div class="ff-field">
+        <label class="ff-label ff-label--required" for="cp-goal">Votre objectif</label>
+        <textarea id="cp-goal" class="ff-textarea" formControlName="goal" rows="5"
+                  placeholder="Ex. : passer de développeuse frontend à lead technique d’ici 18 mois"></textarea>
+        <p class="ff-hint">Plus l’objectif est précis, plus le plan est actionnable.</p>
+      </div>
+
+      <button type="submit" class="ff-btn ff-btn--primary" [disabled]="careerBusy()">
+        {{ careerBusy() ? 'Élaboration…' : 'Construire mon plan' }}
+      </button>
+    </form>
+
+    <div class="result-col">
+      @if (careerResult(); as plan) {
+        <div class="ff-card ff-card--padded">
+          @if (plan.summary) {
+            <p class="result-text">{{ plan.summary }}</p>
+          }
+
+          @if (asMilestones(plan.milestones).length) {
+            <ol class="milestones">
+              @for (milestone of asMilestones(plan.milestones); track milestone.title) {
+                <li class="milestone">
+                  @if (milestone.timeframe) {
+                    <span class="milestone__time">{{ milestone.timeframe }}</span>
+                  }
+                  <p class="milestone__title">{{ milestone.title }}</p>
+                  @if (milestone.description) {
+                    <p class="milestone__desc">{{ milestone.description }}</p>
+                  }
+                </li>
+              }
+            </ol>
+          }
+
+          @if (asList(plan.skillsToAcquire).length) {
+            <div class="result-group">
+              <p class="result-label">Compétences à développer</p>
+              <p class="chips">
+                @for (skill of asList(plan.skillsToAcquire); track skill) {
+                  <span class="chip">{{ skill }}</span>
+                }
+              </p>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="ff-card ff-card--padded placeholder">
+          <p class="placeholder__title">Votre plan apparaîtra ici</p>
+          <p class="placeholder__text">
+            Décrivez où vous voulez être dans un à trois ans. L’assistant propose
+            des étapes concrètes, appuyées sur votre parcours actuel.
+          </p>
+        </div>
+      }
+    </div>
+  </div>
+}
+
+<!-- ══════════ OPTIMISER CV ══════════ -->
+@if (tool() === 'cv') {
+  <div class="split">
+    <form class="ff-card ff-card--padded form" [formGroup]="cvForm" (ngSubmit)="optimizeCv()">
+      <div class="ff-field">
+        <label class="ff-label ff-label--required" for="co-role">Poste visé</label>
+        <input id="co-role" class="ff-input" formControlName="targetRole"
+               placeholder="Développeuse frontend senior" maxlength="200" />
+      </div>
+
+      <div class="ff-field">
+        <label class="ff-label" for="co-text">Texte actuel (facultatif)</label>
+        <textarea id="co-text" class="ff-textarea" formControlName="currentText" rows="8"
+                  placeholder="Collez la section à retravailler…"></textarea>
+      </div>
+
+      <button type="submit" class="ff-btn ff-btn--primary" [disabled]="cvBusy()">
+        {{ cvBusy() ? 'Optimisation…' : 'Optimiser' }}
+      </button>
+    </form>
+
+    <div class="result-col">
+      @if (cvResult(); as result) {
+        <div class="ff-card ff-card--padded">
+          @if (result.summary) {
+            <div class="result-group">
+              <p class="result-label">Résumé proposé</p>
+              <p class="result-text">{{ asText(result.summary) }}</p>
+            </div>
+          }
+
+          @if (asList(result.bullets).length) {
+            <div class="result-group">
+              <p class="result-label">Points reformulés</p>
+              <ul class="result-list">
+                @for (bullet of asList(result.bullets); track bullet) {
+                  <li>{{ bullet }}</li>
+                }
+              </ul>
+            </div>
+          }
+
+          @if (asList(result.keywords).length) {
+            <div class="result-group">
+              <p class="result-label">Mots-clés</p>
+              <p class="chips">
+                @for (keyword of asList(result.keywords); track keyword) {
+                  <span class="chip">{{ keyword }}</span>
+                }
+              </p>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="ff-card ff-card--padded placeholder">
+          <p class="placeholder__title">Suggestions d’écriture</p>
+          <p class="placeholder__text">
+            Indiquez le poste visé. L’assistant propose des formulations
+            appuyées sur votre expérience réelle, sans rien inventer.
+          </p>
+        </div>
+      }
+    </div>
+  </div>
+}

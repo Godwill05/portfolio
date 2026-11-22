@@ -1,0 +1,264 @@
+<div class="toolbar">
+  <input
+    type="search"
+    class="ff-input search"
+    placeholder="Rechercher par email ou nom…"
+    [value]="search()"
+    (input)="search.set($any($event.target).value)"
+    (keydown.enter)="applyFilters()"
+    aria-label="Rechercher un utilisateur"
+  />
+
+  <select class="ff-select filter" [value]="roleFilter()"
+          (change)="roleFilter.set($any($event.target).value); applyFilters()"
+          aria-label="Filtrer par rôle">
+    <option value="">Tous les rôles</option>
+    @for (entry of roleEntries; track entry[0]) {
+      <option [value]="entry[0]">{{ entry[1] }}</option>
+    }
+  </select>
+
+  <select class="ff-select filter" [value]="statusFilter()"
+          (change)="statusFilter.set($any($event.target).value); applyFilters()"
+          aria-label="Filtrer par statut">
+    <option value="">Tous les statuts</option>
+    @for (entry of statusEntries; track entry[0]) {
+      <option [value]="entry[0]">{{ entry[1] }}</option>
+    }
+  </select>
+
+  <span class="count">{{ total() }} utilisateur(s)</span>
+</div>
+
+@if (loading()) {
+  <div class="ff-card">
+    <div class="ff-skeleton" style="height: 18rem"></div>
+  </div>
+} @else if (users().length === 0) {
+  <div class="ff-card ff-card--padded">
+    <p class="ff-hint">Aucun utilisateur ne correspond à ces filtres.</p>
+  </div>
+} @else {
+  <div class="ff-card table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Utilisateur</th>
+          <th scope="col">Rôle</th>
+          <th scope="col">Statut</th>
+          <th scope="col">Dernière connexion</th>
+          <th scope="col">Inscription</th>
+          <th scope="col"><span class="sr-only">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (user of users(); track user.id) {
+          <tr class="row" (click)="open(user)">
+            <td>
+              <div class="who">
+                <span class="avatar" aria-hidden="true">{{ initialsOf(user) }}</span>
+                <div class="who__text">
+                  <span class="who__name">
+                    {{ user.firstName }} {{ user.lastName }}
+                    @if (isSelf(user)) {
+                      <span class="ff-badge">vous</span>
+                    }
+                  </span>
+                  <span class="who__email">{{ user.email }}</span>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="ff-badge" [class.ff-badge--accent]="user.role !== 'user'">
+                {{ roleLabel(user.role) }}
+              </span>
+            </td>
+            <td>
+              <span class="status" [class]="'status status--' + user.status">
+                {{ statusLabel(user.status) }}
+              </span>
+            </td>
+            <td class="muted">{{ relative(user.lastLoginAt) }}</td>
+            <td class="muted">{{ relative(user.createdAt) }}</td>
+            <td class="right">
+              <button type="button" class="ff-btn ff-btn--ghost ff-btn--sm"
+                      (click)="open(user); $event.stopPropagation()">
+                Gérer
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (pages() > 1) {
+    <nav class="pager" aria-label="Pagination">
+      <button type="button" class="ff-btn ff-btn--secondary ff-btn--sm"
+              [disabled]="page() <= 1" (click)="goToPage(page() - 1)">Précédent</button>
+      <span class="pager__info">Page {{ page() }} sur {{ pages() }}</span>
+      <button type="button" class="ff-btn ff-btn--secondary ff-btn--sm"
+              [disabled]="page() >= pages()" (click)="goToPage(page() + 1)">Suivant</button>
+    </nav>
+  }
+}
+
+<!-- Fiche -->
+@if (detail(); as user) {
+  <app-modal [title]="user.firstName + ' ' + user.lastName"
+             [description]="user.email"
+             width="38rem"
+             (closed)="closeDetail()">
+    <div class="detail">
+      @if (detailLoading()) {
+        <div class="ff-skeleton" style="height: 10rem"></div>
+      } @else {
+        <!-- Métriques -->
+        <div class="metrics">
+          <div class="metric">
+            <span class="metric__label">Requêtes IA</span>
+            <span class="metric__value">{{ user.aiRequests }}</span>
+          </div>
+          <div class="metric">
+            <span class="metric__label">Sessions actives</span>
+            <span class="metric__value">{{ user.activeSessions }}</span>
+          </div>
+          <div class="metric">
+            <span class="metric__label">Crédits bonus</span>
+            <span class="metric__value">{{ user.quota.bonusCredits }}</span>
+          </div>
+          <div class="metric">
+            <span class="metric__label">Email vérifié</span>
+            <span class="metric__value">{{ user.emailVerified ? 'Oui' : 'Non' }}</span>
+          </div>
+        </div>
+
+        <!-- Rôle et statut -->
+        <div class="block" [formGroup]="editForm">
+          <h3 class="block__title">Rôle et statut</h3>
+
+          <div class="grid2">
+            <div class="ff-field">
+              <label class="ff-label" for="d-role">Rôle</label>
+              <select id="d-role" class="ff-select" formControlName="role">
+                @for (entry of roleEntries; track entry[0]) {
+                  <option [value]="entry[0]">{{ entry[1] }}</option>
+                }
+              </select>
+            </div>
+            <div class="ff-field">
+              <label class="ff-label" for="d-status">Statut</label>
+              <select id="d-status" class="ff-select" formControlName="status">
+                @for (entry of statusEntries; track entry[0]) {
+                  <option [value]="entry[0]">{{ entry[1] }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          @if (isSelf(user)) {
+            <p class="ff-hint">
+              Vous ne pouvez pas modifier votre propre rôle ni désactiver votre compte.
+            </p>
+          }
+
+          <button type="button" class="ff-btn ff-btn--primary ff-btn--sm"
+                  (click)="saveUser()" [disabled]="busy()">
+            Enregistrer
+          </button>
+        </div>
+
+        <!-- Quotas -->
+        <div class="block" [formGroup]="quotaForm">
+          <h3 class="block__title">Ajuster les crédits IA</h3>
+
+          <div class="grid3">
+            <div class="ff-field">
+              <label class="ff-label" for="q-feature">Fonctionnalité</label>
+              <select id="q-feature" class="ff-select" formControlName="feature">
+                <option value="*">Toutes</option>
+                @for (entry of featureEntries; track entry[0]) {
+                  <option [value]="entry[0]">{{ entry[1] }}</option>
+                }
+              </select>
+            </div>
+            <div class="ff-field">
+              <label class="ff-label" for="q-delta">Crédits</label>
+              <input id="q-delta" type="number" class="ff-input" formControlName="delta"
+                     min="-500" max="500" />
+            </div>
+            <div class="ff-field">
+              <label class="ff-label ff-label--required" for="q-note">Motif</label>
+              <input id="q-note" class="ff-input" formControlName="note"
+                     placeholder="Geste commercial" maxlength="500" />
+            </div>
+          </div>
+
+          <p class="ff-hint">
+            Une valeur négative retire des crédits. L’opération est enregistrée
+            dans le journal d’audit avec votre identité.
+          </p>
+
+          <button type="button" class="ff-btn ff-btn--secondary ff-btn--sm"
+                  (click)="adjustQuota()" [disabled]="busy()">
+            Appliquer
+          </button>
+        </div>
+
+        <!-- Quotas actuels -->
+        <div class="block">
+          <h3 class="block__title">Consommation du jour</h3>
+          <ul class="quota-list">
+            @for (feature of user.quota.features; track feature.feature) {
+              <li class="quota">
+                <span class="quota__name">{{ featureLabel(feature.feature) }}</span>
+                <span class="quota__value">
+                  {{ feature.used }} / {{ feature.limit }}
+                  <span class="quota__remaining">({{ feature.remaining }} restant)</span>
+                </span>
+              </li>
+            }
+          </ul>
+        </div>
+
+        <!-- Activité IA -->
+        @if (user.recentAiUsage.length > 0) {
+          <div class="block">
+            <h3 class="block__title">Dernières requêtes IA</h3>
+            <ul class="usage">
+              @for (entry of user.recentAiUsage; track entry.id) {
+                <li class="usage__item">
+                  <span class="usage__feature">{{ featureLabel(entry.feature) }}</span>
+                  <span class="usage__meta">
+                    {{ entry.model || 'modèle inconnu' }} ·
+                    {{ entry.promptTokens + entry.completionTokens }} jetons
+                    @if (entry.latencyMs) { · {{ entry.latencyMs }} ms }
+                  </span>
+                  <span class="usage__state" [class.usage__state--ko]="!entry.success">
+                    {{ entry.success ? '✓' : '✕' }}
+                  </span>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+
+        <!-- Zone dangereuse -->
+        <div class="block block--danger">
+          <h3 class="block__title block__title--danger">Actions irréversibles</h3>
+
+          <div class="danger-actions">
+            <button type="button" class="ff-btn ff-btn--secondary ff-btn--sm"
+                    (click)="revokeSessions()" [disabled]="busy()">
+              Fermer toutes les sessions ({{ user.activeSessions }})
+            </button>
+            <button type="button" class="ff-btn ff-btn--danger ff-btn--sm"
+                    (click)="deleteUser()" [disabled]="busy() || isSelf(user)">
+              Supprimer l’utilisateur
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  </app-modal>
+}
