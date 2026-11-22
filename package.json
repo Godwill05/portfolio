@@ -1,0 +1,31 @@
+{
+  "name": "folioforge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "FolioForge \u2014 SaaS platform for intelligent portfolios, career growth and CV generation",
+  "workspaces": [
+    "apps/api",
+    "apps/web"
+  ],
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "dev": "npm run dev --workspace=@folioforge/api & npm run dev --workspace=@folioforge/web",
+    "dev:api": "npm run dev --workspace=@folioforge/api",
+    "dev:web": "npm run dev --workspace=@folioforge/web",
+    "build": "npm run build --workspace=@folioforge/api && npm run build --workspace=@folioforge/web",
+    "build:api": "npm run build --workspace=@folioforge/api",
+    "build:web": "npm run build --workspace=@folioforge/web",
+    "test": "npm run test --workspace=@folioforge/api && npm run test --workspace=@folioforge/web",
+    "test:api": "npm run test --workspace=@folioforge/api",
+    "test:web": "npm run test --workspace=@folioforge/web",
+    "lint": "npm run lint --workspace=@folioforge/api",
+    "migration:run": "npm run migration:run --workspace=@folioforge/api",
+    "migration:revert": "npm run migration:revert --workspace=@folioforge/api",
+    "migration:generate": "npm run migration:generate --workspace=@folioforge/api",
+    "seed": "npm run seed --workspace=@folioforge/api",
+    "seed:demo": "npm run seed:demo --workspace=@folioforge/api",
+    "create:admin": "npm run create:admin --workspace=@folioforge/api"
+  }
+}
